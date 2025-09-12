@@ -76,21 +76,40 @@ const releaseSeatsAndDeleteBooking=inngest.createFunction(
     }
 )
 
-//Inngest function to send email
-const sendBookingConfirmationEmail=inngest.createFunction(
-    {id:'send-booking-confirmation-email'},
-    {event:'app/show.booked'},
-    async({event,step})=>{
-        const {bookingId}=event.data;
-        const booking=await Booking.findById(bookingId).populate({
-            path:'show',
-            populate:{path:'movie', model:'Movie'}
-        }).populate('user');
+// In your Inngest function file
 
-        await sendEmail({
-            to:booking.user.email,
-            subject:`Payment Confirmation:"${booking.show.movie.title}"booked! `,
-            body:`<div style="font-family: Arial,sans-serif; line-heightL1.5;">
+ const sendBookingConfirmationEmail=inngest.createFunction(
+  { id: 'send-booking-confirmation-email' },
+  { event: 'app/show.booked' },
+  async ({ event, step }) => {
+    try {
+      const { bookingId } = event.data;
+      console.log(`[Inngest] Function started for bookingId: ${bookingId}`);
+
+      const booking = await Booking.findById(bookingId)
+        .populate({
+          path: 'show',
+          populate: { path: 'movie', model: 'Movie' }
+        })
+        .populate('user');
+
+      // ❗ CRITICAL CHECK 1: Did we find the booking?
+      if (!booking) {
+        console.error(`[Inngest] CRITICAL: Booking not found for ID: ${bookingId}`);
+        return; // Stop the function here
+      }
+
+      // ❗ CRITICAL CHECK 2: Was the user populated and do they have an email?
+      if (!booking.user || !booking.user.email) {
+        console.error(`[Inngest] CRITICAL: User or user email not found for bookingId: ${bookingId}`);
+        // Log the whole booking object to see what data you actually have
+        console.log('[Inngest] Booking data:', JSON.stringify(booking, null, 2));
+        return; // Stop the function here
+      }
+      
+      console.log(`[Inngest] Found user email: ${booking.user.email}. Preparing to send.`);
+
+      const emailBody=`<div style="font-family: Arial,sans-serif; line-heightL1.5;">
             <h2>Hi ${booking.user.name},</h2>
             <p>Your Booking for <strong style="color:#F84565;">"${booking.show.movie.title}"</strong> is confirmed.</p>
             <p>
@@ -100,9 +119,22 @@ const sendBookingConfirmationEmail=inngest.createFunction(
             <p>Enjoy the show!</p>
             <p>Thanks for booking with us!<br/>-ShowSnatch Team</p>
             </div>`
-        })
+
+      // Now it's safe to call sendEmail
+      await sendEmail({
+        to: booking.user.email,
+        subject: `Payment Confirmation: ${booking.show.movie.title} booked!`,
+        body:emailBody
+      });
+
+      console.log(`[Inngest] Email sent successfully to: ${booking.user.email}`);
+
+    } catch (error) {
+      console.error('[Inngest] An unexpected error occurred:', error);
+      throw error;
     }
-)
+  }
+);
 
 
 
