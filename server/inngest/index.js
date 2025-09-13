@@ -86,27 +86,37 @@ const releaseSeatsAndDeleteBooking=inngest.createFunction(
       const { bookingId } = event.data;
 
       const booking = await Booking.findById(bookingId)
-        .populate({
-          path: 'show',
-          populate: { path: 'movie', model: 'Movie' }
-        }).populate('user');
+  .populate({
+    path: 'show',
+    populate: { path: 'movie', model: 'Movie' }
+  })
+  .populate('user');
 
-      await sendEmail({
-        to: booking.user.email,
-        subject: `Payment Confirmation: "${booking.show.movie.title}" booked!`,
-        body:`<div style="font-family: Arial,sans-serif; line-height: 1.5;">
-            <h2>Hi ${booking.user.name},</h2>
-            <p>Your Booking for <strong style="color:#F84565;">"${booking.show.movie.title}"</strong> is confirmed.</p>
-            <p>
-                <strong>Date:</strong> ${new Date(booking.show.showDateTime).toLocaleDateString('en-US',{timezone:'Asia/Kolkata'})}<br/>
-                <strong>Time:</strong> ${new Date(booking.show.showDateTime).toLocaleTimeString('en-US',{timeZone:'Asia/Kolkata'})}
-            </p>
-            <p>Enjoy the show!</p>
-            <p>Thanks for booking with us!<br/>-ShowSnatch Team</p>
-            </div>`
-      });
+if (!booking) {
+  console.error("❌ Booking not found for ID:", bookingId);
+  return;
+}
 
-      console.log(`[Inngest] Email sent successfully to: ${booking.user.email}`);
+if (!booking.user) {
+  console.error("❌ User not found for booking:", bookingId);
+  return;
+}
+
+await sendEmail({
+  to: booking.user.email,
+  subject: `Payment Confirmation: ${booking.show.movie.title} booked!`,
+  body: `
+    <h2>Hi ${booking.user.name}</h2>
+    <p>Your booking for <strong>${booking.show.movie.title}</strong> is confirmed.</p>
+    <p><strong>Date:</strong> ${new Date(booking.show.showDateTime).toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata' })}</p>
+    <p><strong>Time:</strong> ${new Date(booking.show.showDateTime).toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata' })}</p>
+    <p>Enjoy the show!</p>
+    <p>Thanks for booking with us!<br>– ShowSnatch Team</p>
+  `
+});
+
+console.log(`✅ Email sent successfully to: ${booking.user.email}`);
+
 
     } catch (error) {
       console.error('[Inngest] An unexpected error occurred:', error);
