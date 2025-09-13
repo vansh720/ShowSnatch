@@ -35,7 +35,6 @@ export const stripeWebhooks=async(request,response)=>{
                     name:"app/show.booked",
                     data:{bookingId}
                 })
-                console.log("inngest sent",bookingId);
                 
                 break;
             }
