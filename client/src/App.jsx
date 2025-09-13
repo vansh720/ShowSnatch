@@ -1,6 +1,6 @@
 import React from 'react'
 import { Route, Routes, useLocation } from 'react-router-dom'
-import Home from './pages/Home'
+import Home from './Pages/Home'
 import Navbar from './components/Navbar'
 import Movie from './Pages/Movie'
 import Moviedetails from './Pages/Moviedetails'
