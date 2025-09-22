@@ -25,6 +25,8 @@ export const addShow=async(req,res)=>{
         const{movieId,showsInput,showPrice}=req.body
         let movie =await Movie.findById(movieId)
         if(!movie){
+            console.log("Using TMDB Key:", process.env.TMDB_API_KEY); // Add this for debugging
+            console.log("Fetching data for movieId:", movieId); // Also log the movie ID
             const [movieDetailsResponse,movieCreditsResponse]=await Promise.all([
                 axios.get(`https://api.themoviedb.org/3/movie/${movieId}`,{
             headers:{Authorization:`Bearer ${process.env.TMDB_API_KEY}`}
